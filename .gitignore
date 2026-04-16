@@ -1,0 +1,24 @@
+# Archivos de entorno virtual de Python
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+
+# Ignorar archivos CSV GIGANTES (Impiden subir a GitHub)
+# (Puedes ajustar esto si quieres subir un CSV pequeñito de demostración)
+data/endesaAgregada*
+# Si quieres subir endesa_streaming_dev.csv a GitHub para Nico, no comentes la siguiente línea,
+# pero en general es mejor ignorar todos los datos grandes:
+# data/*.csv
+# !data/endesa_streaming_dev.csv
+
+# Archivos dinámicos de Zeppelin y local logs
+notebooks/.git/
+zeppelin-logs/
+logs/
+
+# Archivos del sistema y de IDE
+.DS_Store
+.idea/
+.vscode/

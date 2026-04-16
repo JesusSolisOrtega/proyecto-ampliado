@@ -1,0 +1,153 @@
+# ============================================================
+#  Entorno Spark + Zeppelin + Kafka + Zookeeper
+# ============================================================
+
+services:
+
+  # ----------------------------------------------------------
+  #  ZOOKEEPER
+  # ----------------------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.9.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bigdata-network
+    restart: on-failure
+
+  # ----------------------------------------------------------
+  #  KAFKA BROKER
+  # ----------------------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.9.0
+    container_name: kafka
+    hostname: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_HEAP_OPTS: "-Xmx512m -Xms512m"
+    volumes:
+      - ./data:/data
+    networks:
+      - bigdata-network
+    restart: on-failure
+
+  # ----------------------------------------------------------
+  #  KAFKA UI (Panel de Control)
+  # ----------------------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: EntregableLocal
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:29092
+    ports:
+      - "8082:8080"
+    networks:
+      - bigdata-network
+    restart: on-failure
+
+  # ----------------------------------------------------------
+  #  SPARK MASTER
+  # ----------------------------------------------------------
+  spark-master:
+    image: apache/spark:3.5.5
+    platform: linux/amd64
+    container_name: spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_DAEMON_MEMORY=512m
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - spark-home:/opt/spark
+      - ./data:/data
+    networks:
+      - bigdata-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------
+  #  SPARK WORKER
+  # ----------------------------------------------------------
+  spark-worker:
+    image: apache/spark:3.5.5
+    platform: linux/amd64
+    container_name: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_WEBUI_PORT=8081
+      - SPARK_DAEMON_MEMORY=512m
+    ports:
+      - "8081-8083:8081"
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    volumes:
+      - spark-home:/opt/spark
+      - ./data:/data
+    networks:
+      - bigdata-network
+    restart: on-failure
+    mem_limit: 3g
+
+  # ----------------------------------------------------------
+  #  ZEPPELIN
+  # ----------------------------------------------------------
+  zeppelin:
+    image: apache/zeppelin:0.12.0
+    platform: linux/amd64
+    container_name: zeppelin
+    environment:
+      - ZEPPELIN_ADDR=0.0.0.0
+      - ZEPPELIN_PORT=8888
+      - SPARK_HOME=/opt/spark
+      - MASTER=spark://spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
+      - ZEPPELIN_NOTEBOOK_DIR=/opt/zeppelin/notebook
+      - SPARK_DAEMON_MEMORY=512m
+    ports:
+      - "8888:8888"
+    volumes:
+      - spark-home:/opt/spark
+      - ./notebooks:/opt/zeppelin/notebook
+      - zeppelin-logs:/opt/zeppelin/logs
+      - ./data:/data
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - bigdata-network
+    restart: on-failure
+    mem_limit: 2g
+
+networks:
+  bigdata-network:
+    driver: bridge
+
+volumes:
+  spark-home:
+  zeppelin-logs:
