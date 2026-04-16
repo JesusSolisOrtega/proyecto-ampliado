@@ -2,7 +2,7 @@
 
 **Proyecto Final Ampliado**
 **Asignatura:** Ingeniería de Datos: Big Data
-**Autores:** Jesús Solís Ortega y [Nombre y Apellidos de Nico]
+**Autores:** Jesús Solís Ortega y Nicolás Herrera Lobo
 **Fecha de entrega:** [Fecha]
 
 ---
