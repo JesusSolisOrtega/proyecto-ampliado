@@ -3,15 +3,9 @@ import signal
 import logging
 from kafka import KafkaConsumer
 
-# =========================================================
-# CONFIGURACIÓN GLOBAL
-# =========================================================
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "consumo_streaming")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
-# =========================================================
-# CONFIGURACIÓN DE LOGGER
-# =========================================================
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s',
@@ -19,64 +13,61 @@ logging.basicConfig(
 )
 logger = logging.getLogger("KafkaConsumer")
 
-corriendo = True
+is_running = True
 
-def manejador_senales(sig, frame):
-    global corriendo
-    logger.warning("Señal de cierre recibida. Deteniendo escucha...")
-    corriendo = False
+def signal_handler(sig, frame):
+    """Handles SIGINT for graceful shutdown."""
+    global is_running
+    logger.warning("Interrupt signal received. Stopping consumer...")
+    is_running = False
 
-signal.signal(signal.SIGINT, manejador_senales)
+signal.signal(signal.SIGINT, signal_handler)
 
-def inicializar_consumidor():
-    """
-    Inicializa y devuelve el consumidor de Kafka.
-    """
-    logger.info(f"Conectando Consumidor al broker en {KAFKA_BOOTSTRAP_SERVERS}...")
+def init_consumer():
+    """Initializes and returns the Kafka consumer."""
+    logger.info(f"Connecting Consumer to broker at {KAFKA_BOOTSTRAP_SERVERS}...")
     try:
         consumer = KafkaConsumer(
             KAFKA_TOPIC,
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             value_deserializer=lambda v: v.decode('utf-8'),
-            auto_offset_reset='latest', # Solo queremos ver lo vivo actualmente
+            auto_offset_reset='latest',
             enable_auto_commit=True,
-            group_id='grupo_verificacion_dev',
+            group_id='verification_group_dev',
             api_version=(0, 10, 1)
         )
-        logger.info("Consumidor suscrito exitosamente al topic.")
+        logger.info("Consumer successfully subscribed to the topic.")
         return consumer
     except Exception as e:
-        logger.error(f"Fallo al arrancar el Consumidor: {e}")
+        logger.error(f"Failed to start Kafka Consumer: {e}")
         exit(1)
 
-def escuchar_mensajes(consumer):
-    """
-    Escucha de forma continua los mensajes del topic usando poll seguro.
-    """
-    global corriendo
-    logger.info(f"Esperando lecturas en '{KAFKA_TOPIC}'...")
-    logger.info("[Pulsa Ctrl+C para salir limpiamente]")
+def listen_messages(consumer):
+    """Continuously polls the topic for new messages."""
+    global is_running
+    logger.info(f"Polling topic '{KAFKA_TOPIC}'...")
+    logger.info("[Press Ctrl+C to exit cleanly]")
     
-    contador = 0
+    processed_count = 0
     try:
-        while corriendo:
-            # poll con timeout, no bloquea permanentemente
-            mensajes_batch = consumer.poll(timeout_ms=1000)
+        while is_running:
+            # Poll with timeout to prevent blocking thread entirely
+            message_batch = consumer.poll(timeout_ms=1000)
             
-            for particion, mensajes in mensajes_batch.items():
-                for mensaje in mensajes:
-                    if not corriendo:
+            for topic_partition, messages in message_batch.items():
+                for message in messages:
+                    if not is_running:
                         break
-                    logger.info(f"-> RECIBIDO {particion}: {mensaje.value}")
-                    contador += 1
+                    logger.info(f"-> RECEIVED {topic_partition}: {message.value}")
+                    processed_count += 1
                     
     except Exception as e:
-        logger.error(f"Excepción en la etapa de lectura: {e}")
+        logger.error(f"Consumer exception during poll: {e}")
     finally:
-        logger.info(f"Sesión cerrada. Eventos interceptados en esta prueba: {contador}")
+        logger.info(f"Closing consumer session. Events received: {processed_count}")
         consumer.close()
 
 if __name__ == "__main__":
-    logger.info("--- Iniciando Monitor Analítico de Kafka ---")
-    test_consumer = inicializar_consumidor()
-    escuchar_mensajes(test_consumer)
+    logger.info("--- Starting Verification Consumer ---")
+    consumer_instance = init_consumer()
+    listen_messages(consumer_instance)

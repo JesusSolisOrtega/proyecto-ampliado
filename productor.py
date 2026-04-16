@@ -1,22 +1,14 @@
 import os
 import time
-import json
 import signal
 import logging
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-# =========================================================
-# CONFIGURACIÓN GLOBAL (Mejorado con SO Environs)
-# =========================================================
-# Si el entorno tiene declarada ARCHIVO_DATOS la usa, si no, usa el CSV por defecto.
 ARCHIVO_DATOS = os.getenv("ARCHIVO_DATOS", "data/endesa_streaming_dev.csv")
 KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "consumo_streaming")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 
-# =========================================================
-# CONFIGURACIÓN DE LOGGER (Nivel Profesional)
-# =========================================================
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - [%(name)s] - %(message)s',
@@ -24,80 +16,76 @@ logging.basicConfig(
 )
 logger = logging.getLogger("KafkaProducer")
 
-# Control de ejecución
-corriendo = True
+is_running = True
 
-def manejador_senales(sig, frame):
-    """
-    Captura Ctrl+C para un apagado limpio (Graceful Shutdown)
-    """
-    global corriendo
-    logger.warning("Señal de interrupción recibida. Iniciando apagado seguro del inyector...")
-    corriendo = False
+def signal_handler(sig, frame):
+    """Handles SIGINT for graceful shutdown."""
+    global is_running
+    logger.warning("Interrupt signal received. Initiating graceful shutdown...")
+    is_running = False
 
-signal.signal(signal.SIGINT, manejador_senales)
+signal.signal(signal.SIGINT, signal_handler)
 
-def inicializar_productor():
-    """
-    Inicializa y devuelve el productor de Kafka.
-    """
-    logger.info(f"Conectando al Broker de Kafka en {KAFKA_BOOTSTRAP_SERVERS}...")
+def init_producer():
+    """Initializes and returns the Kafka producer."""
+    logger.info(f"Connecting to Kafka broker at {KAFKA_BOOTSTRAP_SERVERS}...")
     try:
         producer = KafkaProducer(
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             value_serializer=lambda v: str(v).encode('utf-8'),
             api_version=(0, 10, 1),
-            retries=3  # Resiliencia: si falla, reintenta 3 veces
+            retries=3
         )
-        logger.info("Conexión establecida con éxito.")
+        logger.info("Kafka connection established successfully.")
         return producer
     except Exception as e:
-        logger.error(f"Fallo crítico al conectar con Kafka: {e}")
+        logger.error(f"Critical failure connecting to Kafka: {e}")
         exit(1)
 
-def publicar_datos(producer):
+def publish_data(producer):
     """
-    Lee el archivo CSV en modo Lazy Loading de forma segura.
+    Reads the CSV file line-by-line (lazy loading) to prevent high memory consumption
+    and streams records to Kafka.
     """
-    global corriendo
-    logger.info(f"Iniciando lectura desde: {ARCHIVO_DATOS}")
-    contador = 0
+    global is_running
+    logger.info(f"Starting to read from: {ARCHIVO_DATOS}")
+    processed_count = 0
     
     try:
-        with open(ARCHIVO_DATOS, 'r', encoding='utf-8') as archivo:
-            for linea in archivo:
-                if not corriendo:
-                    logger.info("Válvula de inyección cortada tempranamente por el usuario.")
+        with open(ARCHIVO_DATOS, 'r', encoding='utf-8') as file:
+            for line in file:
+                if not is_running:
+                    logger.info("Producer interrupted by user.")
                     break
                 
-                linea = linea.strip()
-                if not linea:
+                line = line.strip()
+                if not line:
                     continue
                 
                 try:
-                    # Envío asíncrono optimizado
-                    producer.send(KAFKA_TOPIC, value=linea)
-                    contador += 1
+                    # Asynchronous send
+                    producer.send(KAFKA_TOPIC, value=line)
+                    processed_count += 1
                 except KafkaError as e:
-                    logger.error(f"Error al enviar mensaje a Kafka: {e}")
+                    logger.error(f"Failed to send message to Kafka: {e}")
                 
-                if contador % 100 == 0:
-                    logger.info(f"Subidos {contador} eventos a '{KAFKA_TOPIC}'...")
+                if processed_count % 100 == 0:
+                    logger.info(f"Published {processed_count} events to '{KAFKA_TOPIC}'...")
                 
-                # CRITICO - ANTI CRASH: Pausa para no saturar la RAM
+                # Throttling to avoid saturating the broker
                 time.sleep(0.05)
                 
     except FileNotFoundError:
-        logger.error(f"El dataset {ARCHIVO_DATOS} no existe.")
+        logger.error(f"Dataset {ARCHIVO_DATOS} not found.")
     except Exception as e:
-        logger.error(f"Error inesperado en lectura: {e}")
+        logger.error(f"Unexpected error during file read: {e}")
     finally:
-        logger.info("Aplicando flush (vaciado seguro de buffers) en Kafka...")
+        logger.info("Flushing Kafka buffers...")
         producer.flush(timeout=5)
         producer.close()
-        logger.info(f"✔ Proceso cerrado limpiamente. Total inyectado: {contador} registros.")
+        logger.info(f"Producer closed cleanly. Total records pushed: {processed_count}.")
 
 if __name__ == "__main__":
-    logger.info("--- Iniciando Servicio de Producción Eléctrica ---")
-    test_producer = inicializar_productor()
-    publicar_datos(test_producer)
+    logger.info("--- Starting Streaming Producer ---")
+    producer_instance = init_producer()
+    publish_data(producer_instance)
