@@ -79,6 +79,7 @@ services:
     volumes:
       - spark-home:/opt/spark
       - ./data:/data
+      - .:/app
     networks:
       - bigdata-network
     restart: on-failure
