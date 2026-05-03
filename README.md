@@ -26,81 +26,96 @@ Simular en un entorno local un clúster *Big Data* de producción completo:
 
 **[✅] Fase 4: Procesamiento Spark Structured Streaming**
 - Script `spark_streaming_job.py` que lee del topic `consumo_streaming`, parsea las líneas CSV, calcula consumos totales diarios y persiste en Parquet particionado por año y mes en `data/parquet_output/`.
+- Notebook de Apache Zeppelin con 8 queries analíticas sobre los datos persistidos.
 
 ---
 
-## 🚀 Instrucciones de Despliegue y Ejecución
+## 🚀 Arranque Rápido
 
-### 1. Requisitos Previos
+### Opción A — Script automático (recomendado)
+
+```bash
+# Instalar dependencias Python (solo la primera vez)
+python -m venv .venv
+source .venv/Scripts/activate   # Windows Git Bash
+pip install kafka-python
+
+# Arrancar todo el pipeline
+bash start.sh
+
+# En la misma terminal, lanzar el productor cuando start.sh lo indique
+python productor.py
+```
+
+```bash
+# Parar todo limpiamente
+bash stop.sh
+```
+
+---
+
+### Opción B — Paso a paso manual
+
+#### 1. Requisitos Previos
 - **Docker** y **Docker Compose** instalados.
 - **Python 3** con entorno virtual.
 
-### 2. Preparar el Entorno Virtual (Python)
+#### 2. Preparar el Entorno Virtual (Python)
 
 ```bash
-# Crear entorno virtual (solo la primera vez)
 python -m venv .venv
-
-# Activar — Windows (Git Bash)
-source .venv/Scripts/activate
-# Activar — Linux/macOS
-source .venv/bin/activate
-
-# Instalar librerías
+source .venv/Scripts/activate   # Windows Git Bash
+source .venv/bin/activate        # Linux/macOS
 pip install kafka-python
 ```
 
-### 3. Levantar el Clúster
+#### 3. Levantar el Clúster
 
 ```bash
 docker compose up -d
-```
-
-Verifica que todos los servicios están "Up":
-```bash
-docker compose ps
+docker compose ps    # verificar que todo está "Up"
 ```
 
 Paneles web disponibles:
-- **Kafka-UI** (monitor del broker): http://localhost:8082
+- **Kafka-UI**: http://localhost:8082
 - **Spark Master UI**: http://localhost:8080
 - **Apache Zeppelin**: http://localhost:8888
 
-### 4. Crear el Topic de Kafka (primera vez)
+#### 4. Crear el Topic de Kafka (primera vez)
 
 > En Windows con Git Bash añadir `MSYS_NO_PATHCONV=1` delante de cada comando `docker exec`.
 
 ```bash
-MSYS_NO_PATHCONV=1 docker exec kafka kafka-topics --create --topic consumo_streaming --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+MSYS_NO_PATHCONV=1 docker exec kafka kafka-topics --create --if-not-exists --topic consumo_streaming --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
 
-Verificar que se creó:
-```bash
-MSYS_NO_PATHCONV=1 docker exec kafka kafka-topics --list --bootstrap-server localhost:9092
-```
-
-### 5. Lanzar el Job de Spark Structured Streaming (Terminal 1)
+#### 5. Lanzar el Job de Spark (Terminal 1)
 
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.jars.ivy=/tmp/ivy2 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5 /app/spark_streaming_job.py
 ```
 
-> La primera ejecución descarga el conector Kafka (~60MB desde Maven). Las siguientes usan caché.  
-> Cuando aparezca `Job activo. Procesando eventos cada 10 s...`, Spark está listo.
+> La primera ejecución descarga el conector Kafka (~60MB desde Maven). Las siguientes usan caché.
 
-### 6. Lanzar el Productor (Terminal 2)
+Ver el log (si se lanzó en background):
+```bash
+tail -f logs/spark_job.log
+```
 
-Para pruebas usa el dataset de desarrollo (1000 filas):
+Parar el job manualmente:
+```bash
+MSYS_NO_PATHCONV=1 docker exec spark-master pkill -f spark_streaming_job.py
+```
+
+#### 6. Lanzar el Productor (Terminal 2)
+
 ```bash
 python productor.py
 ```
 
-Para la entrega final, apuntar al dataset completo cambiando `ARCHIVO_DATOS` en `productor.py`:
-```python
-ARCHIVO_DATOS = "data/endesaAgregada"
-```
+> Para la entrega final cambiar `ARCHIVO_DATOS = "data/endesaAgregada"` en `productor.py`.
 
-### 7. Verificar los Parquet generados
+#### 7. Verificar los Parquet generados
 
 Spark escribe en `data/parquet_output/` particionado por año y mes:
 ```
@@ -113,13 +128,17 @@ data/parquet_output/
     └── mes=01/  part-*.snappy.parquet
 ```
 
-Cada fichero Parquet contiene: `cups`, `periodo`, `anyo`, `mes`, `tarifa`, `provincia`, `municipio`, `h1`..`h24` (consumo activo por hora), `r1`..`r24` (consumo reactivo por hora), `consumo_activo_total_wh`, `consumo_reactivo_total_varh`.
+Columnas por registro: `cups`, `periodo`, `anyo`, `mes`, `tarifa`, `provincia`, `municipio`, `h1`..`h24` (consumo activo por hora en Wh), `r1`..`r24` (consumo reactivo por hora en VARh), `consumo_activo_total_wh`, `consumo_reactivo_total_varh`.
 
-### 8. Apagar
+#### 8. Análisis con Apache Zeppelin
+
+Abrir http://localhost:8888 y ejecutar el notebook **Pipeline Consumo Electrico - Evidencia End-to-End**. Contiene 8 queries analíticas sobre los datos persistidos: consumo por tarifa, top provincias, curva de carga horaria, ratio reactivo/activo, etc.
+
+#### 9. Apagar
 
 ```bash
-docker compose stop      # Para sin borrar configuración
-docker compose down      # Para y elimina contenedores y redes
+bash stop.sh                  # Para el Spark job y el cluster
+docker compose down           # Elimina también contenedores y redes
 ```
 
 ---
@@ -128,11 +147,14 @@ docker compose down      # Para y elimina contenedores y redes
 
 ```
 ProyectoAmpliadoBigData/
-├── docker-compose.yml          # Orquestación del clúster completo
-├── productor.py                # Productor Kafka (lazy loading desde CSV)
-├── consumidor.py               # Consumidor de verificación
-├── spark_streaming_job.py      # Job Spark Structured Streaming (Fase 4)
+├── docker-compose.yml              # Orquestación del clúster completo
+├── start.sh                        # Script de arranque automático
+├── stop.sh                         # Script de parada limpia
+├── productor.py                    # Productor Kafka (lazy loading desde CSV)
+├── consumidor.py                   # Consumidor de verificación
+├── spark_streaming_job.py          # Job Spark Structured Streaming (Fase 4)
 ├── data/
-│   └── endesa_streaming_dev.csv  # Dataset de desarrollo (1000 filas)
-└── notebooks/                  # Notebooks de Apache Zeppelin
+│   └── endesa_streaming_dev.csv    # Dataset de desarrollo (1000 filas)
+└── notebooks/
+    └── Pipeline_Consumo_Electrico.zpln   # Notebook Zeppelin con queries analíticas
 ```

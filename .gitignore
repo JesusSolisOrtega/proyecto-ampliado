@@ -17,13 +17,11 @@ data/endesaAgregada*
 notebooks/.git/
 zeppelin-logs/
 logs/
+nohup.out
 
 # Salida generada por Spark Structured Streaming
 data/parquet_output/
 data/checkpoints/
-
-# Scripts de depuración temporal
-leer_parquet.py
 
 # Archivos del sistema y de IDE
 .DS_Store

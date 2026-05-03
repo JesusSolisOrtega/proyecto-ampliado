@@ -88,13 +88,18 @@ El proyecto Big Data aborda un marco Colaborativo (*Pair Work*). La asignación 
 *   Resolución de dependencias OS, manejo de variables de entorno (*Twelve-Factor App Configuration*).
 *   Test e integridad unitaria comprobada satisfactoriamente mediante monitor de cola (`consumidor.py`).
 
-### Fase II: Procesamiento Masivo y Analítica (*Spark Analytics*) [En Desarrollo]
+### Fase II: Procesamiento Masivo y Analítica (*Spark Analytics*) [Completado 100%]
 *(Desarrollo responsable de la Explotación Data Analysis)*
-*   Despliegue del motor `Spark Structured Streaming` que leerá como suscriptor permanente (consumer) del tópico de Kafka.
-*   Aplicación de Esquema y Reglas de Negocio en DataFrames (`select`, `cast`, ventanas de tiempo, etc).
-*   Enrutamiento de consolidación (Sink) escribiendo microbaches en una capa analítica tabular (Lago de Datos). Formato idóneo objetivo: **Parquet** sobre simulación de disco distribuido.
-*   Presentación final demostrando los datos persistidos utilizando Queries distribuidas desde *Apache Zeppelin*.
+*   Despliegue del motor `Spark Structured Streaming` (`spark_streaming_job.py`) suscrito de forma permanente al topic `consumo_streaming` de Kafka.
+*   Parseo de las líneas CSV crudas mediante `split` y aplicación de esquema explícito: extracción de `cups`, `periodo`, `tarifa`, `provincia`, `municipio`, 24 columnas de consumo activo (`h1`..`h24`) y 24 de consumo reactivo (`r1`..`r24`).
+*   Transformaciones aplicadas en cada micro-batch:
+    *   `consumo_activo_total_wh`: suma de `h1`..`h24` — consumo activo diario total.
+    *   `consumo_reactivo_total_varh`: suma de `r1`..`r24` — consumo reactivo diario total.
+    *   Extracción de `anyo` y `mes` desde el campo `periodo` (YYYYMM).
+*   Sink a **Parquet con compresión Snappy**, particionado físicamente por `anyo/mes`, en micro-batches de 10 segundos con checkpoint en `data/checkpoints/`.
+*   Pipeline validado end-to-end: 1000 eventos inyectados por el productor → procesados por Spark → persistidos correctamente en `data/parquet_output/`.
 
 ---
-**Conclusión: Viabilidad del Framework**
-La consolidación de la Fase I aporta un marco elástico y validado, eliminando cualquier componente de fricción derivado de las redes subyacentes. El clúster absorbe fiablemente la carga eléctrica, garantizándole al ecosistema de Analytics de la Fase II la pureza y secuencialidad íntegra en los datos provistos.
+
+**Conclusión: Pipeline End-to-End Operativo**
+El sistema completo ha sido validado en local simulando condiciones de producción: el productor inyecta eventos a 20 msg/s, Spark los consume en micro-batches de 10 segundos aplicando transformaciones analíticas y persiste el resultado en formato columnar Parquet particionado. La arquitectura desacoplada (Kafka como buffer) garantiza tolerancia a fallos parciales sin pérdida de datos, reproduciendo fielmente el patrón de referencia utilizado en plataformas reales de contadores inteligentes e IoT.
