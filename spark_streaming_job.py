@@ -25,7 +25,7 @@ def create_spark_session():
 
 
 def build_streaming_query(spark):
-    # ── 1. Leer mensajes crudos de Kafka ──────────────────────────────────────
+    # Leer mensajes del topic Kafka
     df_raw = (
         spark.readStream
         .format("kafka")
@@ -35,20 +35,18 @@ def build_streaming_query(spark):
         .load()
     )
 
-    # ── 2. Valor del mensaje → string ─────────────────────────────────────────
     df_lines = df_raw.selectExpr("CAST(value AS STRING) as linea")
 
-    # ── 3. Partir por coma ────────────────────────────────────────────────────
-    # Esquema CSV (55 columnas):
+    # Estructura del CSV (55 columnas):
     #   [0]      cups
-    #   [1]      periodo  (YYYYMM)
+    #   [1]      periodo (YYYYMM)
     #   [2]      tarifa
     #   [3]      provincia
     #   [4]      municipio
     #   [5..28]  h1..h24  — consumo activo por hora (Wh)
-    #   [29]     separador (siempre 0.0)
+    #   [29]     separador
     #   [30..53] r1..r24  — consumo reactivo por hora (VARh)
-    #   [54]     separador (siempre 0.0)
+    #   [54]     separador
     df_split = df_lines.select(split(col("linea"), ",").alias("c"))
 
     cols_activo   = [trim(col("c")[5  + i]).cast("double").alias(f"h{i+1}") for i in range(24)]
@@ -64,19 +62,18 @@ def build_streaming_query(spark):
         *cols_reactivo,
     )
 
-    # ── 4. Transformaciones ───────────────────────────────────────────────────
     suma_activo   = " + ".join([f"h{i+1}" for i in range(24)])
     suma_reactivo = " + ".join([f"r{i+1}" for i in range(24)])
 
     df_final = (
         df_parsed
-        .withColumn("consumo_activo_total_wh",     expr(suma_activo))
-        .withColumn("consumo_reactivo_total_varh",  expr(suma_reactivo))
+        .withColumn("consumo_activo_total_wh",    expr(suma_activo))
+        .withColumn("consumo_reactivo_total_varh", expr(suma_reactivo))
         .withColumn("anyo", col("periodo").substr(1, 4))
         .withColumn("mes",  col("periodo").substr(5, 2))
     )
 
-    # ── 5. Sink → Parquet, particionado por año y mes ─────────────────────────
+    # Escribir en Parquet particionado por año y mes
     query = (
         df_final.writeStream
         .format("parquet")
@@ -92,14 +89,14 @@ def build_streaming_query(spark):
 
 
 if __name__ == "__main__":
-    logger.info("=== Iniciando Spark Structured Streaming Job ===")
+    logger.info("Iniciando Spark Structured Streaming Job...")
     spark = create_spark_session()
     spark.sparkContext.setLogLevel("WARN")
 
-    logger.info(f"Kafka  : {KAFKA_BOOTSTRAP_SERVERS}  →  topic '{KAFKA_TOPIC}'")
-    logger.info(f"Parquet: {OUTPUT_PATH}")
+    logger.info(f"Kafka: {KAFKA_BOOTSTRAP_SERVERS} -> topic '{KAFKA_TOPIC}'")
+    logger.info(f"Salida Parquet: {OUTPUT_PATH}")
 
     query = build_streaming_query(spark)
 
-    logger.info("Job activo. Procesando eventos cada 10 s... (Ctrl+C para parar)")
+    logger.info("Job activo. Procesando cada 10s... (Ctrl+C para parar)")
     query.awaitTermination()

@@ -1,0 +1,367 @@
+{
+  "paragraphs": [
+    {
+      "title": "1. Cargar datos Parquet y crear vista SQL",
+      "text": "%spark.pyspark\ndf = spark.read.parquet(\"/data/parquet_output/\")\ndf.createOrReplaceTempView(\"consumo\")\n\nprint(f\"Registros cargados: {df.count()}\")\nprint(f\"Particiones: {df.rdd.getNumPartitions()}\")\ndf.printSchema()",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.400",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "python",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/python",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820400_1594245875",
+      "id": "paragraph_01",
+      "dateCreated": "2026-05-03 16:13:40.400",
+      "status": "READY"
+    },
+    {
+      "title": "2. Muestra de registros procesados",
+      "text": "%spark.sql\nSELECT cups, periodo, tarifa, provincia, municipio,\n       ROUND(consumo_activo_total_wh, 2)    AS consumo_activo_wh,\n       ROUND(consumo_reactivo_total_varh, 2) AS consumo_reactivo_varh,\n       anyo, mes\nFROM consumo\nLIMIT 15",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.400",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820400_2136404962",
+      "id": "paragraph_02",
+      "dateCreated": "2026-05-03 16:13:40.400",
+      "status": "READY"
+    },
+    {
+      "title": "3. Registros y consumo medio por año y mes",
+      "text": "%spark.sql\nSELECT anyo,\n       mes,\n       COUNT(*)                                        AS num_contadores,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_activo_medio_wh,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_activo_total_kwh\nFROM consumo\nGROUP BY anyo, mes\nORDER BY anyo, mes",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.401",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820400_1447473776",
+      "id": "paragraph_03",
+      "dateCreated": "2026-05-03 16:13:40.401",
+      "status": "READY"
+    },
+    {
+      "title": "4. Consumo por tipo de tarifa",
+      "text": "%spark.sql\nSELECT tarifa,\n       COUNT(*)                                        AS num_registros,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_medio_wh,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_total_kwh\nFROM consumo\nGROUP BY tarifa\nORDER BY consumo_total_kwh DESC",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.401",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 6.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820401_2067086326",
+      "id": "paragraph_04",
+      "dateCreated": "2026-05-03 16:13:40.401",
+      "status": "READY"
+    },
+    {
+      "title": "5. Top 10 provincias por consumo total",
+      "text": "%spark.sql\nSELECT provincia,\n       COUNT(*)                                        AS num_registros,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_total_kwh,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_medio_wh\nFROM consumo\nGROUP BY provincia\nORDER BY consumo_total_kwh DESC\nLIMIT 10",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.401",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 6.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820401_358067578",
+      "id": "paragraph_05",
+      "dateCreated": "2026-05-03 16:13:40.401",
+      "status": "READY"
+    },
+    {
+      "title": "6. Perfil de consumo horario medio (curva de carga)",
+      "text": "%spark.sql\nSELECT\n  ROUND(AVG(h1),1)  AS `01h`, ROUND(AVG(h2),1)  AS `02h`,\n  ROUND(AVG(h3),1)  AS `03h`, ROUND(AVG(h4),1)  AS `04h`,\n  ROUND(AVG(h5),1)  AS `05h`, ROUND(AVG(h6),1)  AS `06h`,\n  ROUND(AVG(h7),1)  AS `07h`, ROUND(AVG(h8),1)  AS `08h`,\n  ROUND(AVG(h9),1)  AS `09h`, ROUND(AVG(h10),1) AS `10h`,\n  ROUND(AVG(h11),1) AS `11h`, ROUND(AVG(h12),1) AS `12h`,\n  ROUND(AVG(h13),1) AS `13h`, ROUND(AVG(h14),1) AS `14h`,\n  ROUND(AVG(h15),1) AS `15h`, ROUND(AVG(h16),1) AS `16h`,\n  ROUND(AVG(h17),1) AS `17h`, ROUND(AVG(h18),1) AS `18h`,\n  ROUND(AVG(h19),1) AS `19h`, ROUND(AVG(h20),1) AS `20h`,\n  ROUND(AVG(h21),1) AS `21h`, ROUND(AVG(h22),1) AS `22h`,\n  ROUND(AVG(h23),1) AS `23h`, ROUND(AVG(h24),1) AS `24h`\nFROM consumo",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820401_1147120326",
+      "id": "paragraph_06",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    },
+    {
+      "title": "7. Top 10 consumidores individuales",
+      "text": "%spark.sql\nSELECT cups,\n       tarifa,\n       provincia,\n       municipio,\n       COUNT(*)                                               AS meses_con_datos,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)         AS consumo_total_kwh,\n       ROUND(AVG(consumo_activo_total_wh), 2)                AS consumo_medio_diario_wh\nFROM consumo\nGROUP BY cups, tarifa, provincia, municipio\nORDER BY consumo_total_kwh DESC\nLIMIT 10",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820402_1235211150",
+      "id": "paragraph_07",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    },
+    {
+      "title": "8. Ratio consumo reactivo vs activo por tarifa",
+      "text": "%spark.sql\nSELECT tarifa,\n       ROUND(AVG(consumo_activo_total_wh), 2)                     AS activo_medio_wh,\n       ROUND(AVG(consumo_reactivo_total_varh), 2)                 AS reactivo_medio_varh,\n       ROUND(AVG(consumo_reactivo_total_varh) /\n             NULLIF(AVG(consumo_activo_total_wh), 0) * 100, 2)   AS ratio_reactivo_pct\nFROM consumo\nGROUP BY tarifa\nORDER BY ratio_reactivo_pct DESC",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820402_1299227080",
+      "id": "paragraph_08",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    },
+    {
+      "title": "9. Deteccion de contadores inactivos",
+      "text": "%spark.sql\nSELECT cups, tarifa, provincia, municipio,\n       COUNT(*) AS registros_sin_consumo\nFROM consumo\nWHERE consumo_activo_total_wh = 0\nGROUP BY cups, tarifa, provincia, municipio\nORDER BY registros_sin_consumo DESC\nLIMIT 10",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820402_192697979",
+      "id": "paragraph_09",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    },
+    {
+      "title": "10. Pico y valle de consumo por hora",
+      "text": "%spark.sql\nSELECT hora,\n       ROUND(MAX(consumo), 1) AS pico_wh,\n       ROUND(MIN(consumo), 1) AS valle_wh,\n       ROUND(AVG(consumo), 1) AS media_wh\nFROM (\n  SELECT 'h01' AS hora, h1  AS consumo FROM consumo UNION ALL\n  SELECT 'h02', h2  FROM consumo UNION ALL\n  SELECT 'h03', h3  FROM consumo UNION ALL\n  SELECT 'h04', h4  FROM consumo UNION ALL\n  SELECT 'h05', h5  FROM consumo UNION ALL\n  SELECT 'h06', h6  FROM consumo UNION ALL\n  SELECT 'h07', h7  FROM consumo UNION ALL\n  SELECT 'h08', h8  FROM consumo UNION ALL\n  SELECT 'h09', h9  FROM consumo UNION ALL\n  SELECT 'h10', h10 FROM consumo UNION ALL\n  SELECT 'h11', h11 FROM consumo UNION ALL\n  SELECT 'h12', h12 FROM consumo UNION ALL\n  SELECT 'h13', h13 FROM consumo UNION ALL\n  SELECT 'h14', h14 FROM consumo UNION ALL\n  SELECT 'h15', h15 FROM consumo UNION ALL\n  SELECT 'h16', h16 FROM consumo UNION ALL\n  SELECT 'h17', h17 FROM consumo UNION ALL\n  SELECT 'h18', h18 FROM consumo UNION ALL\n  SELECT 'h19', h19 FROM consumo UNION ALL\n  SELECT 'h20', h20 FROM consumo UNION ALL\n  SELECT 'h21', h21 FROM consumo UNION ALL\n  SELECT 'h22', h22 FROM consumo UNION ALL\n  SELECT 'h23', h23 FROM consumo UNION ALL\n  SELECT 'h24', h24 FROM consumo\n)\nGROUP BY hora\nORDER BY hora",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820402_1509139194",
+      "id": "paragraph_10",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    },
+    {
+      "title": "11. Distribucion por tramos de consumo",
+      "text": "%spark.sql\nSELECT\n  CASE\n    WHEN consumo_activo_total_wh = 0       THEN '0. Sin consumo'\n    WHEN consumo_activo_total_wh < 500     THEN '1. Bajo  (<500 Wh)'\n    WHEN consumo_activo_total_wh < 2000    THEN '2. Medio (500-2000 Wh)'\n    WHEN consumo_activo_total_wh < 5000    THEN '3. Alto  (2000-5000 Wh)'\n    ELSE                                        '4. Muy alto (>5000 Wh)'\n  END AS tramo,\n  COUNT(*) AS num_registros,\n  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) AS porcentaje\nFROM consumo\nGROUP BY 1\nORDER BY 1",
+      "user": "anonymous",
+      "dateUpdated": "2026-05-03 16:13:40.402",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12.0,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9.0,
+        "title": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1777824820402_1970366220",
+      "id": "paragraph_11",
+      "dateCreated": "2026-05-03 16:13:40.402",
+      "status": "READY"
+    }
+  ],
+  "name": "Pipeline Consumo Electrico - Evidencia End-to-End",
+  "id": "2MTPPN58Q",
+  "defaultInterpreterGroup": "spark",
+  "version": "0.12.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false
+  },
+  "info": {}
+}

@@ -41,7 +41,32 @@ docker exec kafka kafka-topics \
 log "Topic listo."
 
 # ── 4. Lanzar Spark Streaming Job en background ───────
-log "[4/4] Lanzando Spark Structured Streaming Job..."
+log "[4/5] Importando notebook de Zeppelin..."
+NOTEBOOK_FILE=$(ls notebooks/*.zpln 2>/dev/null | head -1)
+if [ -n "$NOTEBOOK_FILE" ]; then
+  RETRIES=0
+  until curl -sf "http://localhost:8888/api/version" > /dev/null 2>&1; do
+    RETRIES=$((RETRIES + 1))
+    if [ $RETRIES -ge 12 ]; then
+      warn "  Zeppelin no respondió. Importa el notebook manualmente desde http://localhost:8888"
+      break
+    fi
+    warn "  Zeppelin no listo aún, reintentando en 5s... ($RETRIES/12)"
+    sleep 5
+  done
+  RESULT=$(curl -s -X POST "http://localhost:8888/api/notebook/import" \
+    -H "Content-Type: application/json" \
+    --data-binary @"$NOTEBOOK_FILE" 2>/dev/null)
+  if echo "$RESULT" | grep -q '"status":"OK"'; then
+    log "Notebook importado correctamente."
+  else
+    warn "  Notebook ya existía o no se pudo importar (normal si ya estaba cargado)."
+  fi
+else
+  warn "  No se encontró fichero .zpln en notebooks/"
+fi
+
+log "[5/5] Lanzando Spark Structured Streaming Job..."
 mkdir -p logs
 nohup docker exec spark-master /opt/spark/bin/spark-submit \
   --master spark://spark-master:7077 \

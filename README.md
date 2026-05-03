@@ -1,36 +1,28 @@
 # Proyecto Final Big Data - Pipeline de Ingesta y Procesamiento en Streaming
 
-Este repositorio contiene la infraestructura y el código fuente para el despliegue de una tubería de datos completa (*Data Pipeline*). El sistema está diseñado para leer conjuntos de datos masivos de consumo eléctrico mediante **Apache Kafka**, consumirlos en tiempo real con **Apache Spark Structured Streaming**, transformarlos y almacenarlos de forma persistente en formato columnar **Parquet**.
+Pipeline completo para procesar datos de consumo eléctrico en tiempo real. Lee el dataset Endesa Agregada (364 MB) línea a línea, lo envía a un topic de Kafka, y Spark Structured Streaming lo consume, transforma y persiste en Parquet.
 
-## 🎯 Meta Final del Proyecto
+## Estado del proyecto
 
-Simular en un entorno local un clúster *Big Data* de producción completo:
-1. **Zookeeper y Kafka Broker**: Orquestan y reciben los eventos (líneas de un dataset de 364MB) inyectados de forma secuencial sin colapsar la RAM del host.
-2. **Spark Master/Worker**: Procesan en Streaming los datos leídos de Kafka, aplican transformaciones y calculan agregados.
-3. **Persistencia en Parquet**: Los datos transformados se almacenan en formato columnar particionado por año y mes, listos para análisis con Spark SQL o Apache Zeppelin.
+**[Completado] Fase 1: Infraestructura Docker**
+- `docker-compose.yml` con Zookeeper, Kafka, Kafka-UI, Spark Master, Spark Worker y Zeppelin en red compartida (`bigdata-network`).
+- Límites de memoria JVM configurados para ejecutar en 16 GB de RAM.
 
-## 📌 Estado Actual
+**[Completado] Fase 2: Ingesta de datos (Productor Kafka)**
+- `productor.py` lee el CSV línea a línea (sin cargarlo en memoria) y envía cada registro al topic.
+- Throttling de 5ms entre envíos, flush cada 1000 mensajes, cierre limpio con Ctrl+C.
 
-**[✅] Fase 1: Infraestructura Docker y Monitorización**
-- `docker-compose.yml` unificado levantando: Zookeeper, Kafka, Kafka-UI, Spark-Master, Spark-Worker y Zeppelin en red compartida (`bigdata-network`).
-- Limitadores de memoria JVM (`-Xmx512m` y `SPARK_DAEMON_MEMORY: 512m`) aplicados.
-- Directorios persistentes `/notebooks`, `/data` y `/spark-home` correctamente enlazados.
+**[Completado] Fase 3: Verificación del pipeline**
+- Kafka-UI en http://localhost:8082 para monitorizar el topic en tiempo real.
+- `consumidor.py` para comprobar que los mensajes llegan correctamente al broker.
 
-**[✅] Fase 2: Ingesta de Datos (Productor Kafka)**
-- Script `productor.py` con técnica *Lazy Loading* y throttling (`time.sleep(0.05)`) para lectura del CSV sin afectar a la RAM.
-- Gestión de errores, métricas por Logger de consola y apagado seguro (*Graceful Shutdown*).
-
-**[✅] Fase 3: Verificación del Pipeline**
-- Panel visual de Kafka-UI operativo para auditar topics.
-- Script `consumidor.py` de control que demuestra la circulación de eventos por el clúster.
-
-**[✅] Fase 4: Procesamiento Spark Structured Streaming**
-- Script `spark_streaming_job.py` que lee del topic `consumo_streaming`, parsea las líneas CSV, calcula consumos totales diarios y persiste en Parquet particionado por año y mes en `data/parquet_output/`.
-- Notebook de Apache Zeppelin con 8 queries analíticas sobre los datos persistidos.
+**[Completado] Fase 4: Procesamiento Spark Structured Streaming**
+- `spark_streaming_job.py` lee del topic `consumo_streaming`, parsea las líneas CSV, calcula consumos totales y persiste en Parquet particionado por año y mes en `data/parquet_output/`.
+- Notebook de Apache Zeppelin con 11 queries analíticas sobre los datos persistidos.
 
 ---
 
-## 🚀 Arranque Rápido
+## Arranque rápido
 
 ### Opción A — Script automático (recomendado)
 
@@ -56,11 +48,11 @@ bash stop.sh
 
 ### Opción B — Paso a paso manual
 
-#### 1. Requisitos Previos
-- **Docker** y **Docker Compose** instalados.
-- **Python 3** con entorno virtual.
+#### 1. Requisitos previos
+- Docker y Docker Compose instalados.
+- Python 3 con entorno virtual.
 
-#### 2. Preparar el Entorno Virtual (Python)
+#### 2. Preparar el entorno virtual
 
 ```bash
 python -m venv .venv
@@ -69,7 +61,7 @@ source .venv/bin/activate        # Linux/macOS
 pip install kafka-python
 ```
 
-#### 3. Levantar el Clúster
+#### 3. Levantar el clúster
 
 ```bash
 docker compose up -d
@@ -77,11 +69,11 @@ docker compose ps    # verificar que todo está "Up"
 ```
 
 Paneles web disponibles:
-- **Kafka-UI**: http://localhost:8082
-- **Spark Master UI**: http://localhost:8080
-- **Apache Zeppelin**: http://localhost:8888
+- Kafka-UI: http://localhost:8082
+- Spark Master UI: http://localhost:8080
+- Apache Zeppelin: http://localhost:8888
 
-#### 4. Crear el Topic de Kafka (primera vez)
+#### 4. Crear el topic de Kafka (primera vez)
 
 > En Windows con Git Bash añadir `MSYS_NO_PATHCONV=1` delante de cada comando `docker exec`.
 
@@ -89,15 +81,15 @@ Paneles web disponibles:
 MSYS_NO_PATHCONV=1 docker exec kafka kafka-topics --create --if-not-exists --topic consumo_streaming --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
 ```
 
-#### 5. Lanzar el Job de Spark (Terminal 1)
+#### 5. Lanzar el job de Spark (Terminal 1)
 
 ```bash
 MSYS_NO_PATHCONV=1 docker exec -it spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 --conf spark.jars.ivy=/tmp/ivy2 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.5 /app/spark_streaming_job.py
 ```
 
-> La primera ejecución descarga el conector Kafka (~60MB desde Maven). Las siguientes usan caché.
+> La primera ejecución descarga el conector Kafka (~60 MB desde Maven). Las siguientes usan caché local.
 
-Ver el log (si se lanzó en background):
+Ver el log (si se lanzó en background con start.sh):
 ```bash
 tail -f logs/spark_job.log
 ```
@@ -107,13 +99,13 @@ Parar el job manualmente:
 MSYS_NO_PATHCONV=1 docker exec spark-master pkill -f spark_streaming_job.py
 ```
 
-#### 6. Lanzar el Productor (Terminal 2)
+#### 6. Lanzar el productor (Terminal 2)
 
 ```bash
 python productor.py
 ```
 
-> Para la entrega final cambiar `ARCHIVO_DATOS = "data/endesaAgregada"` en `productor.py`.
+El productor envía hasta 50.000 registros del dataset real (`data/endesaAgregada`) con 5ms de retardo entre envíos. El proceso tarda aproximadamente 4 minutos.
 
 #### 7. Verificar los Parquet generados
 
@@ -132,29 +124,29 @@ Columnas por registro: `cups`, `periodo`, `anyo`, `mes`, `tarifa`, `provincia`, 
 
 #### 8. Análisis con Apache Zeppelin
 
-Abrir http://localhost:8888 y ejecutar el notebook **Pipeline Consumo Electrico - Evidencia End-to-End**. Contiene 8 queries analíticas sobre los datos persistidos: consumo por tarifa, top provincias, curva de carga horaria, ratio reactivo/activo, etc.
+Abrir http://localhost:8888 y ejecutar el notebook **Pipeline Consumo Electrico - Evidencia End-to-End**. Contiene 11 queries sobre los datos persistidos: consumo por mes, comparativa de tarifas, top provincias, curva de carga horaria, top consumidores, ratio reactivo/activo, contadores inactivos, pico y valle por hora, y segmentación por tramos.
 
 #### 9. Apagar
 
 ```bash
 bash stop.sh                  # Para el Spark job y el cluster
-docker compose down           # Elimina también contenedores y redes
+docker compose down           # Elimina también los contenedores y la red
 ```
 
 ---
 
-## 📁 Estructura del Repositorio
+## Estructura del repositorio
 
 ```
 ProyectoAmpliadoBigData/
 ├── docker-compose.yml              # Orquestación del clúster completo
-├── start.sh                        # Script de arranque automático
-├── stop.sh                         # Script de parada limpia
-├── productor.py                    # Productor Kafka (lazy loading desde CSV)
+├── start.sh                        # Arranque automático del pipeline
+├── stop.sh                         # Parada limpia
+├── productor.py                    # Productor Kafka (lectura línea a línea del CSV)
 ├── consumidor.py                   # Consumidor de verificación
-├── spark_streaming_job.py          # Job Spark Structured Streaming (Fase 4)
+├── spark_streaming_job.py          # Job Spark Structured Streaming
 ├── data/
-│   └── endesa_streaming_dev.csv    # Dataset de desarrollo (1000 filas)
+│   └── endesaAgregada              # Dataset real (364 MB, 1.17M registros)
 └── notebooks/
     └── Pipeline_Consumo_Electrico.zpln   # Notebook Zeppelin con queries analíticas
 ```

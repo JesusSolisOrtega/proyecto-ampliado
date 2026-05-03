@@ -9,22 +9,22 @@
 
 ## Resumen Ejecutivo
 
-El presente documento técnico detalla el diseño, arquitectura y fase de implementación inicial de un Data Pipeline (tubería de datos) robusto, orientado al procesamiento de eventos en tiempo real (*Streaming*). El caso de uso se centra en la ingesta masiva de registros de consumo eléctrico (Dataset *Endesa Agregada*, +364 MB), simulando el comportamiento de contadores inteligentes (Smart Meters). El sistema integra tecnologías punta del ecosistema Big Data: **Apache Kafka** como bus de mensajería distribuida y **Apache Spark** como motor de procesamiento analítico (Structured Streaming), todo ello orquestado bajo contenedores **Docker** y monitorizado mediante interfaces de Data Observability (**Kafka-UI** y **Apache Zeppelin**).
+Este documento describe el diseño, arquitectura e implementación de un pipeline de datos orientado al procesamiento en streaming. El caso de uso es la ingesta de registros de consumo eléctrico del dataset Endesa Agregada (+364 MB), que simula el comportamiento de contadores inteligentes. El sistema combina Apache Kafka para la recepción de eventos, Apache Spark Structured Streaming para el procesamiento, y Apache Zeppelin para el análisis de los datos persistidos, todo orquestado mediante Docker Compose.
 
 ---
 
-## 1. Diseño Arquitectónico y Tecnologías
+## 1. Arquitectura y Tecnologías
 
-Para garantizar la inmutabilidad, portabilidad y aislamiento del entorno, la arquitectura se ha desplegado íntegramente sobre la tecnología de virtualización de contenedores (Docker Engine), comunicando los nodos a través de una subred tipo *bridge* aislada denominada `bigdata-network`.
+La arquitectura se despliega íntegramente en contenedores Docker, comunicados a través de una red bridge interna llamada `bigdata-network`. Esto garantiza portabilidad y aislamiento del entorno sin depender de instalaciones locales.
 
-El ecosistema se distribuye en tres grandes capas lógicas:
+El sistema se divide en tres capas:
 
 ```mermaid
 graph LR
     A[Dataset CSV] -->|Python Lazy Loading| B(Capa de Ingesta)
-    B -->|Envío Asíncrono| C{Capa Encolamiento}
+    B -->|Envío por topic| C{Capa de Encolamiento}
     
-    subgraph Capa Encolamiento
+    subgraph Capa de Encolamiento
     Z[Zookeeper] -.->|Coordina| D[Kafka Broker]
     GUI[Kafka-UI] -.->|Monitoriza| D
     end
@@ -36,70 +36,95 @@ graph LR
     H[Apache Zeppelin] -.->|Queries| F
     end
     
-    E -->|Structured Streaming| I[(Capa Sink: HDFS/Parquet)]
+    E -->|Structured Streaming| I[(Parquet en disco)]
 ```
 
-### 1.1. Capa de Encolamiento (*Message Broker*)
-*   **Apache Zookeeper (Quorum Manager)**: Componente vital encargado de mantener el estado de configuración, sincronizaciones y gestión de consenso dentro de la red del bróker.
-*   **Apache Kafka (Broker Node)**: Nodo central de ingesta que actúa como un *buffer* o amortiguador de ráfagas para el flujo de datos masivos. Maneja el Topic `consumo_streaming`, permitiendo la persistencia temporal de los mensajes y desacoplando al productor de los consumidores finales.
+### 1.1. Capa de Encolamiento
 
-### 1.2. Capa de Procesamiento y Analítica (*Processing Engine*)
-*   **Apache Spark Master / Worker**: Motor central que despliega un clúster *standalone* para ejecutar las reglas matemáticas y agregaciones analíticas mediante *Spark Structured Streaming*.
-*   **Apache Zeppelin**: Entorno de libretas interactivas (Notebooks) habilitado para construir demostraciones interactivas y diseñar de forma iterativa el modelado dimensional y de limpieza técnica a través de Spark SQL.
+- **Apache Zookeeper**: Gestiona la coordinación y el estado del clúster Kafka.
+- **Apache Kafka**: Broker central que recibe los eventos del productor y los sirve a los consumidores. Usa el topic `consumo_streaming` para desacoplar la ingesta del procesamiento: si Spark se cae, Kafka retiene los mensajes y no se pierden datos.
 
-### 1.3. Capa de Supervisión (*Data Observability*)
-*   **Kafka UI**: Herramienta de auditoría y monitorización gráfica. Su inclusión eleva la profesionalidad del despliegue, permitiendo verificar en vivo el *throughput* (mensajes por segundo), particionado, latencia y salud general del nodo sin necesidad de depender puramente de inspección por consola.
+### 1.2. Capa de Procesamiento
 
----
+- **Apache Spark Master / Worker**: Clúster standalone que ejecuta el job de Structured Streaming. El master coordina y el worker ejecuta las transformaciones.
+- **Apache Zeppelin**: Interfaz de notebooks conectada al clúster Spark. Se usa para consultar los datos ya persistidos en Parquet mediante Spark SQL.
 
-## 2. Ingeniería de Datos: Diseño del Productor (*Ingestion Layer*)
+### 1.3. Monitorización
 
-La extracción de datos (*ETL - Capa Extract*) desde los archivos CSV originales hacia Kafka ha sido construida ad-hoc mediante Python (`kafka-python`). Debido al gran tamaño estructural del dataset que colapsaría métodos de ingesta tradicionales basados en BATCH (ej: carga en dataframes de *Pandas*), se aplicaron metodologías de diseño resiliente (Resilience Engineering):
-
-1.  **Lectura Desacoplada (Patrón *Lazy Loading*)**:
-    El script `productor.py` procesa los datos apoyándose en cursores nativos (bloque `with open`), lo que implica ir transfiriendo las filas desde el sistema de archivos al buffer de red línea a línea sin retener su histórico en la memoria RAM principal.
-2.  **Manejo de Trazas (*Logging* Mapeado)**:
-    Sustituyendo los primitivos comandos de escritura por consola, el productor integra el módulo estándar `logging`. Se emiten métricas a intervalos predecibles (cada 100 eventos) incluyendo marcas de tiempo exactas (*timestamps*) y severidad (`INFO`, `WARNING`, `ERROR`), posibilitando la indexación de logs futura a través de sistemas como ELK.
-3.  **Control de Interrupciones Críticas (*Graceful Shutdown*)**:
-    Tratamiento directo nivel SO mediante captura de señal (`signal.SIGINT`). Esta técnica impide que una terminación abrupta (Ctrl+C) corrompa la comunicación TCP, forzando a Kafka a cerrar el socket y lanzar un `producer.flush()`, asegurando que no queden bytes "huérfanos" en tránsito.
-4.  **Emisión Suavizada (*Throttling*)**:
-    Se inyecta un retardo deliberado de microsegundos (`time.sleep(0.05)`) en el bucle principal. Esto desvanece el pico en el gráfico de red y modela un comportamiento fiel a la realidad de dispositivos IoT (Internet of Things) mandando actualizaciones de estado constantes frente a un volcado repentino de información pura.
+- **Kafka-UI**: Panel web que muestra en tiempo real el estado del broker, los topics y el flujo de mensajes.
 
 ---
 
-## 3. Decisiones de Infraestructura y Limitaciones de Hardware
+## 2. Diseño del Productor
 
-Uno de los principales retos del proyecto ha sido la viabilidad del despilfarrador clúster JVM sobre el que se fundamenta el entorno Big Data (Java Virtual Machines compuestas por Zookeeper, Kafka, Spark Master, Spark Worker y Zeppelin). Todo ello conviviendo en un equipo de desarrollo de capacidades moderadas (Host de 16 GB de RAM).
+El productor (`productor.py`) lee el CSV y envía cada línea como un mensaje al topic de Kafka. Dado el tamaño del dataset (364 MB), se tomaron varias decisiones de diseño:
 
-Para evadir escenarios catastróficos debidos a paginación excesiva de memoria (Swap Thrashing) o recortes de proceso del sistema operativo (OOM Killer), la arquitectura establece **Techados Térmicos Estrictos**:
-*   El Broker de Kafka vio limitada su pre-reserva dinámica de espacio a través de `KAFKA_HEAP_OPTS: "-Xmx512m -Xms512m"`. Como Kafka ejerce simplemente de enrutador transitorio dado nuestro paradigma actual de *Throttling*, destinar mayor margen sería un lujo innecesario.
-*   En paralelo, los agentes fantasmas subyacentes del Framework Spark confinados bajo `SPARK_DAEMON_MEMORY=512m`, liberando al máximo la ram host, mientras dedicamos lógicamente `SPARK_WORKER_MEMORY=2g` para las reservas activas (transformaciones de analítica In-Memory a la hora de manipular RDDs).
+1. **Lazy Loading**: Se lee el fichero línea a línea con `with open()`, sin cargarlo entero en memoria. Esto permite procesar datasets de cualquier tamaño sin riesgo de OOM.
 
----
+2. **Logging estructurado**: Se usa el módulo `logging` de Python con formato de timestamp, nivel de severidad y nombre del componente. Se emite un log cada 1000 eventos con el contador acumulado.
 
-## 4. Estado Actual: Hitos y Flujo de Trabajo
+3. **Graceful Shutdown**: Se captura la señal `SIGINT` (Ctrl+C) para cerrar la conexión limpiamente, haciendo un `flush()` antes de salir y evitando mensajes en tránsito que no lleguen al broker.
 
-El proyecto Big Data aborda un marco Colaborativo (*Pair Work*). La asignación cronológica se distribuye del siguiente modo:
-
-### Fase I: Fundación Arquitectónica e Ingesta Técnica [Completado 100%]
-*(Desarrollo responsable de la arquitectura inicial)*
-*   Elaboración y aprovisionamiento final del clúster Docker con *Data Observability*.
-*   Desarrollo e ingesta algorítmica de la primera etapa del flujo hacia `consumo_streaming`.
-*   Resolución de dependencias OS, manejo de variables de entorno (*Twelve-Factor App Configuration*).
-*   Test e integridad unitaria comprobada satisfactoriamente mediante monitor de cola (`consumidor.py`).
-
-### Fase II: Procesamiento Masivo y Analítica (*Spark Analytics*) [Completado 100%]
-*(Desarrollo responsable de la Explotación Data Analysis)*
-*   Despliegue del motor `Spark Structured Streaming` (`spark_streaming_job.py`) suscrito de forma permanente al topic `consumo_streaming` de Kafka.
-*   Parseo de las líneas CSV crudas mediante `split` y aplicación de esquema explícito: extracción de `cups`, `periodo`, `tarifa`, `provincia`, `municipio`, 24 columnas de consumo activo (`h1`..`h24`) y 24 de consumo reactivo (`r1`..`r24`).
-*   Transformaciones aplicadas en cada micro-batch:
-    *   `consumo_activo_total_wh`: suma de `h1`..`h24` — consumo activo diario total.
-    *   `consumo_reactivo_total_varh`: suma de `r1`..`r24` — consumo reactivo diario total.
-    *   Extracción de `anyo` y `mes` desde el campo `periodo` (YYYYMM).
-*   Sink a **Parquet con compresión Snappy**, particionado físicamente por `anyo/mes`, en micro-batches de 10 segundos con checkpoint en `data/checkpoints/`.
-*   Pipeline validado end-to-end: 1000 eventos inyectados por el productor → procesados por Spark → persistidos correctamente en `data/parquet_output/`.
+4. **Throttling**: Se introduce un retardo de 5ms entre envíos (`time.sleep(0.005)`) para no saturar el broker con ráfagas de mensajes y simular un comportamiento más realista de dispositivos IoT. Con 50.000 registros esto supone unos 4-5 minutos de ingesta.
 
 ---
 
-**Conclusión: Pipeline End-to-End Operativo**
-El sistema completo ha sido validado en local simulando condiciones de producción: el productor inyecta eventos a 20 msg/s, Spark los consume en micro-batches de 10 segundos aplicando transformaciones analíticas y persiste el resultado en formato columnar Parquet particionado. La arquitectura desacoplada (Kafka como buffer) garantiza tolerancia a fallos parciales sin pérdida de datos, reproduciendo fielmente el patrón de referencia utilizado en plataformas reales de contadores inteligentes e IoT.
+## 3. Decisiones de Infraestructura
+
+El principal reto fue hacer funcionar el clúster (Zookeeper, Kafka, Spark Master, Spark Worker y Zeppelin) en una máquina de desarrollo con 16 GB de RAM. Para evitar que el sistema operativo mate procesos por falta de memoria, se establecieron límites explícitos:
+
+- Kafka: `KAFKA_HEAP_OPTS: "-Xmx512m -Xms512m"` — suficiente para el rol de broker de paso.
+- Spark daemon: `SPARK_DAEMON_MEMORY=512m` para los procesos de gestión.
+- Spark Worker: `SPARK_WORKER_MEMORY=2g` para las transformaciones en memoria.
+- Zeppelin: `mem_limit: 2g` a nivel de contenedor Docker.
+
+---
+
+## 4. Job de Spark Structured Streaming
+
+El job (`spark_streaming_job.py`) implementa el procesamiento en tiempo real:
+
+1. **Lectura de Kafka**: Se suscribe al topic `consumo_streaming` desde el offset más antiguo (`startingOffsets: earliest`).
+
+2. **Parseo del CSV**: Cada mensaje es una línea cruda del CSV. Se parte por comas y se extrae el esquema completo: `cups`, `periodo`, `tarifa`, `provincia`, `municipio`, 24 columnas de consumo activo (`h1..h24`) y 24 de consumo reactivo (`r1..r24`).
+
+3. **Transformaciones por micro-batch** (cada 10 segundos):
+   - `consumo_activo_total_wh`: suma de `h1` a `h24`.
+   - `consumo_reactivo_total_varh`: suma de `r1` a `r24`.
+   - `anyo` y `mes`: extraídos del campo `periodo` (formato YYYYMM).
+
+4. **Escritura en Parquet**: Los datos se persisten en `data/parquet_output/` con compresión Snappy, particionados físicamente por `anyo/mes`. El checkpoint en `data/checkpoints/` permite reanudar el job desde donde se quedó si se interrumpe.
+
+---
+
+## 5. Resultados
+
+El pipeline se validó end-to-end con 50.000 registros del dataset real. Los datos procesados se consultaron mediante el notebook de Zeppelin, que incluye 11 queries analíticas:
+
+- Distribución de consumo por año y mes.
+- Comparativa entre tarifas T1 y T2.
+- Top 10 provincias por consumo total.
+- Curva de carga horaria media (perfil de consumo a lo largo del día).
+- Top 10 consumidores individuales.
+- Ratio de consumo reactivo vs activo.
+- Detección de contadores inactivos (consumo = 0).
+- Pico y valle de consumo por hora.
+- Segmentación por tramos de consumo.
+
+La arquitectura desacoplada (Kafka como buffer intermedio) permite que productor y consumidor operen de forma independiente. Si el job de Spark se detiene, Kafka retiene los mensajes y el procesamiento puede reanudarse sin pérdida de datos.
+
+---
+
+## 6. Hitos del Proyecto
+
+### Fase I: Infraestructura e Ingesta [Completado]
+
+- Clúster Docker con todos los servicios y red compartida.
+- Productor Kafka con lazy loading, throttling y shutdown limpio.
+- Consumidor de verificación para comprobar que los mensajes llegan al broker.
+
+### Fase II: Procesamiento y Análisis [Completado]
+
+- Job Spark Structured Streaming que lee de Kafka, transforma y persiste en Parquet.
+- Notebook Zeppelin con 11 queries sobre los datos persistidos.
+- Scripts de arranque (`start.sh`) y parada (`stop.sh`) para simplificar la ejecución.
