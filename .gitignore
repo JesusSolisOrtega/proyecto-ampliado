@@ -14,7 +14,6 @@ data/endesaAgregada*
 # !data/endesa_streaming_dev.csv
 
 # Archivos dinámicos de Zeppelin y local logs
-notebooks/.git/
 zeppelin-logs/
 logs/
 nohup.out
