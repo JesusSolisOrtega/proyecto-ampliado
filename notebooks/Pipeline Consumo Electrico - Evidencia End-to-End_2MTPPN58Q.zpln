@@ -2,10 +2,10 @@
   "paragraphs": [
     {
       "title": "1. Cargar datos Parquet y crear vista SQL",
-      "text": "%spark.pyspark\ndf = spark.read.parquet(\"/data/parquet_output/\")\ndf.createOrReplaceTempView(\"consumo\")\n\nprint(f\"Registros cargados: {df.count()}\")\nprint(f\"Particiones: {df.rdd.getNumPartitions()}\")\ndf.printSchema()",
+      "text": "%spark.pyspark\ndf \u003d spark.read.parquet(\"/data/parquet_output/\")\ndf.createOrReplaceTempView(\"consumo\")\n\nprint(f\"Registros cargados: {df.count()}\")\nprint(f\"Particiones: {df.rdd.getNumPartitions()}\")\ndf.printSchema()",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.400",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:02:39.726",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "python",
@@ -24,19 +24,49 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TEXT",
+            "data": "Registros cargados: 52000\nParticiones: 18\nroot\n |-- cups: string (nullable \u003d true)\n |-- periodo: string (nullable \u003d true)\n |-- tarifa: string (nullable \u003d true)\n |-- provincia: string (nullable \u003d true)\n |-- municipio: string (nullable \u003d true)\n |-- h1: double (nullable \u003d true)\n |-- h2: double (nullable \u003d true)\n |-- h3: double (nullable \u003d true)\n |-- h4: double (nullable \u003d true)\n |-- h5: double (nullable \u003d true)\n |-- h6: double (nullable \u003d true)\n |-- h7: double (nullable \u003d true)\n |-- h8: double (nullable \u003d true)\n |-- h9: double (nullable \u003d true)\n |-- h10: double (nullable \u003d true)\n |-- h11: double (nullable \u003d true)\n |-- h12: double (nullable \u003d true)\n |-- h13: double (nullable \u003d true)\n |-- h14: double (nullable \u003d true)\n |-- h15: double (nullable \u003d true)\n |-- h16: double (nullable \u003d true)\n |-- h17: double (nullable \u003d true)\n |-- h18: double (nullable \u003d true)\n |-- h19: double (nullable \u003d true)\n |-- h20: double (nullable \u003d true)\n |-- h21: double (nullable \u003d true)\n |-- h22: double (nullable \u003d true)\n |-- h23: double (nullable \u003d true)\n |-- h24: double (nullable \u003d true)\n |-- r1: double (nullable \u003d true)\n |-- r2: double (nullable \u003d true)\n |-- r3: double (nullable \u003d true)\n |-- r4: double (nullable \u003d true)\n |-- r5: double (nullable \u003d true)\n |-- r6: double (nullable \u003d true)\n |-- r7: double (nullable \u003d true)\n |-- r8: double (nullable \u003d true)\n |-- r9: double (nullable \u003d true)\n |-- r10: double (nullable \u003d true)\n |-- r11: double (nullable \u003d true)\n |-- r12: double (nullable \u003d true)\n |-- r13: double (nullable \u003d true)\n |-- r14: double (nullable \u003d true)\n |-- r15: double (nullable \u003d true)\n |-- r16: double (nullable \u003d true)\n |-- r17: double (nullable \u003d true)\n |-- r18: double (nullable \u003d true)\n |-- r19: double (nullable \u003d true)\n |-- r20: double (nullable \u003d true)\n |-- r21: double (nullable \u003d true)\n |-- r22: double (nullable \u003d true)\n |-- r23: double (nullable \u003d true)\n |-- r24: double (nullable \u003d true)\n |-- consumo_activo_total_wh: double (nullable \u003d true)\n |-- consumo_reactivo_total_varh: double (nullable \u003d true)\n |-- anyo: integer (nullable \u003d true)\n |-- mes: integer (nullable \u003d true)\n\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d0"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d1"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d2"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820400_1594245875",
       "id": "paragraph_01",
       "dateCreated": "2026-05-03 16:13:40.400",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:02:39.745",
+      "dateFinished": "2026-05-05 13:03:17.307",
+      "status": "FINISHED"
     },
     {
       "title": "2. Muestra de registros procesados",
       "text": "%spark.sql\nSELECT cups, periodo, tarifa, provincia, municipio,\n       ROUND(consumo_activo_total_wh, 2)    AS consumo_activo_wh,\n       ROUND(consumo_reactivo_total_varh, 2) AS consumo_reactivo_varh,\n       anyo, mes\nFROM consumo\nLIMIT 15",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.400",
+      "dateUpdated": "2026-05-05 13:03:17.379",
       "progress": 0,
       "config": {
         "editorSetting": {
@@ -56,19 +86,43 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "cups\tperiodo\ttarifa\tprovincia\tmunicipio\tconsumo_activo_wh\tconsumo_reactivo_varh\tanyo\tmes\n83910\t201506\tT1\tP13\tM2\t2433.0\t1622.5\t2015\t6\n45906\t201506\tT1\tP1\tM1\t3111.5\t0.0\t2015\t6\n73540\t201506\tT1\tP30\tM2\t3174.5\t3652.5\t2015\t6\n33453\t201506\tT1\tP1\tM1\t5040.0\t0.0\t2015\t6\n25345\t201506\tT1\tP1\tM1\t2949.5\t0.0\t2015\t6\n66479\t201506\tT1\tP13\tM2\t4105.5\t112.0\t2015\t6\n16578\t201506\tT2\tP13\tM2\t7359.0\t11997.0\t2015\t6\n20831\t201506\tT1\tP1\tM1\t4724.5\t0.0\t2015\t6\n38541\t201506\tT1\tP1\tM1\t7556.5\t0.0\t2015\t6\n44877\t201506\tT1\tP1\tM1\t7563.5\t0.0\t2015\t6\n26116\t201506\tT1\tP1\tM1\t2902.5\t0.0\t2015\t6\n22529\t201506\tT1\tP1\tM1\t7152.0\t0.0\t2015\t6\n79630\t201506\tT1\tP55\tM2\t5137.5\t1461.5\t2015\t6\n29221\t201506\tT1\tP1\tM1\t13008.0\t0.0\t2015\t6\n28045\t201506\tT1\tP1\tM1\t2386.0\t0.0\t2015\t6\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d3"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820400_2136404962",
       "id": "paragraph_02",
       "dateCreated": "2026-05-03 16:13:40.400",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:03:17.388",
+      "dateFinished": "2026-05-05 13:03:17.823",
+      "status": "FINISHED"
     },
     {
       "title": "3. Registros y consumo medio por año y mes",
       "text": "%spark.sql\nSELECT anyo,\n       mes,\n       COUNT(*)                                        AS num_contadores,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_activo_medio_wh,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_activo_total_kwh\nFROM consumo\nGROUP BY anyo, mes\nORDER BY anyo, mes",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.401",
+      "dateUpdated": "2026-05-05 13:03:17.888",
       "progress": 0,
       "config": {
         "editorSetting": {
@@ -88,20 +142,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "anyo\tmes\tnum_contadores\tconsumo_activo_medio_wh\tconsumo_activo_total_kwh\n2014\t6\t4\t5294.38\t21.18\n2014\t7\t6\t4679.0\t28.07\n2014\t8\t12\t7251.13\t87.01\n2014\t9\t77\t8759.77\t674.5\n2014\t10\t383\t7062.18\t2704.82\n2014\t11\t4377\t6057.29\t26512.77\n2014\t12\t4502\t7042.96\t31707.4\n2015\t1\t4353\t7855.49\t34194.93\n2015\t2\t4500\t7575.92\t34091.64\n2015\t3\t4397\t6284.5\t27632.97\n2015\t4\t4280\t5116.83\t21900.02\n2015\t5\t4412\t5248.96\t23158.42\n2015\t6\t4377\t5522.62\t24172.51\n2015\t7\t4375\t7274.22\t31824.71\n2015\t8\t4451\t5830.33\t25950.79\n2015\t9\t4343\t5248.9\t22795.99\n2015\t10\t3151\t5310.45\t16733.24\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d4"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d5"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820400_1447473776",
       "id": "paragraph_03",
       "dateCreated": "2026-05-03 16:13:40.401",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:03:17.898",
+      "dateFinished": "2026-05-05 13:03:33.020",
+      "status": "FINISHED"
     },
     {
       "title": "4. Consumo por tipo de tarifa",
       "text": "%spark.sql\nSELECT tarifa,\n       COUNT(*)                                        AS num_registros,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_medio_wh,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_total_kwh\nFROM consumo\nGROUP BY tarifa\nORDER BY consumo_total_kwh DESC",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.401",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:03:33.112",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -120,20 +201,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "tarifa\tnum_registros\tconsumo_medio_wh\tconsumo_total_kwh\nT1\t43129\t5411.69\t233400.95\nT2\t8871\t10234.47\t90790.02\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d6"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d7"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820401_2067086326",
       "id": "paragraph_04",
       "dateCreated": "2026-05-03 16:13:40.401",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:03:33.127",
+      "dateFinished": "2026-05-05 13:03:47.647",
+      "status": "FINISHED"
     },
     {
       "title": "5. Top 10 provincias por consumo total",
       "text": "%spark.sql\nSELECT provincia,\n       COUNT(*)                                        AS num_registros,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)   AS consumo_total_kwh,\n       ROUND(AVG(consumo_activo_total_wh), 2)          AS consumo_medio_wh\nFROM consumo\nGROUP BY provincia\nORDER BY consumo_total_kwh DESC\nLIMIT 10",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.401",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:03:47.739",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -152,20 +260,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "provincia\tnum_registros\tconsumo_total_kwh\tconsumo_medio_wh\nP1\t28740\t141840.5\t4935.3\nP13\t9096\t56057.77\t6162.9\nP30\t4182\t21276.28\t5087.58\nP2\t1099\t14239.13\t12956.44\nP17\t1876\t11164.02\t5950.97\nP11\t727\t11015.62\t15152.16\nP38\t994\t6461.94\t6500.95\nP39\t440\t4856.36\t11037.19\nP18\t195\t4305.36\t22078.76\nP14\t620\t3882.11\t6261.47\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d8"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d9"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820401_358067578",
       "id": "paragraph_05",
       "dateCreated": "2026-05-03 16:13:40.401",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:03:47.749",
+      "dateFinished": "2026-05-05 13:04:02.236",
+      "status": "FINISHED"
     },
     {
       "title": "6. Perfil de consumo horario medio (curva de carga)",
       "text": "%spark.sql\nSELECT\n  ROUND(AVG(h1),1)  AS `01h`, ROUND(AVG(h2),1)  AS `02h`,\n  ROUND(AVG(h3),1)  AS `03h`, ROUND(AVG(h4),1)  AS `04h`,\n  ROUND(AVG(h5),1)  AS `05h`, ROUND(AVG(h6),1)  AS `06h`,\n  ROUND(AVG(h7),1)  AS `07h`, ROUND(AVG(h8),1)  AS `08h`,\n  ROUND(AVG(h9),1)  AS `09h`, ROUND(AVG(h10),1) AS `10h`,\n  ROUND(AVG(h11),1) AS `11h`, ROUND(AVG(h12),1) AS `12h`,\n  ROUND(AVG(h13),1) AS `13h`, ROUND(AVG(h14),1) AS `14h`,\n  ROUND(AVG(h15),1) AS `15h`, ROUND(AVG(h16),1) AS `16h`,\n  ROUND(AVG(h17),1) AS `17h`, ROUND(AVG(h18),1) AS `18h`,\n  ROUND(AVG(h19),1) AS `19h`, ROUND(AVG(h20),1) AS `20h`,\n  ROUND(AVG(h21),1) AS `21h`, ROUND(AVG(h22),1) AS `22h`,\n  ROUND(AVG(h23),1) AS `23h`, ROUND(AVG(h24),1) AS `24h`\nFROM consumo",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.402",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:04:02.261",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -184,20 +319,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "01h\t02h\t03h\t04h\t05h\t06h\t07h\t08h\t09h\t10h\t11h\t12h\t13h\t14h\t15h\t16h\t17h\t18h\t19h\t20h\t21h\t22h\t23h\t24h\n235.9\t190.6\t167.4\t155.6\t151.2\t153.1\t166.1\t200.0\t227.6\t250.4\t275.0\t279.4\t284.7\t306.2\t308.6\t289.8\t279.2\t287.5\t305.8\t325.2\t352.5\t381.3\t359.5\t302.0\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d10"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d11"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820401_1147120326",
       "id": "paragraph_06",
       "dateCreated": "2026-05-03 16:13:40.402",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:04:02.274",
+      "dateFinished": "2026-05-05 13:04:16.758",
+      "status": "FINISHED"
     },
     {
       "title": "7. Top 10 consumidores individuales",
       "text": "%spark.sql\nSELECT cups,\n       tarifa,\n       provincia,\n       municipio,\n       COUNT(*)                                               AS meses_con_datos,\n       ROUND(SUM(consumo_activo_total_wh) / 1000, 2)         AS consumo_total_kwh,\n       ROUND(AVG(consumo_activo_total_wh), 2)                AS consumo_medio_diario_wh\nFROM consumo\nGROUP BY cups, tarifa, provincia, municipio\nORDER BY consumo_total_kwh DESC\nLIMIT 10",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.402",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:04:16.786",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -216,20 +378,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "cups\ttarifa\tprovincia\tmunicipio\tmeses_con_datos\tconsumo_total_kwh\tconsumo_medio_diario_wh\n14886\tT2\tP11\tM2\t5\t552.81\t110561.2\n16818\tT2\tP20\tM2\t3\t474.65\t158217.67\n5548\tT2\tP2\tM1\t2\t433.69\t216846.5\n13969\tT2\tP15\tM2\t3\t430.41\t143469.0\n10916\tT2\tP51\tM2\t2\t402.78\t201391.0\n15369\tT2\tP24\tM2\t2\t376.54\t188271.0\n13017\tT2\tP55\tM2\t3\t340.39\t113462.0\n24918\tT1\tP2\tM1\t2\t307.22\t153610.5\n15231\tT2\tP24\tM2\t2\t295.33\t147666.5\n16612\tT2\tP26\tM2\t2\t292.15\t146074.0\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d12"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d13"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820402_1235211150",
       "id": "paragraph_07",
       "dateCreated": "2026-05-03 16:13:40.402",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:04:16.795",
+      "dateFinished": "2026-05-05 13:04:31.651",
+      "status": "FINISHED"
     },
     {
       "title": "8. Ratio consumo reactivo vs activo por tarifa",
       "text": "%spark.sql\nSELECT tarifa,\n       ROUND(AVG(consumo_activo_total_wh), 2)                     AS activo_medio_wh,\n       ROUND(AVG(consumo_reactivo_total_varh), 2)                 AS reactivo_medio_varh,\n       ROUND(AVG(consumo_reactivo_total_varh) /\n             NULLIF(AVG(consumo_activo_total_wh), 0) * 100, 2)   AS ratio_reactivo_pct\nFROM consumo\nGROUP BY tarifa\nORDER BY ratio_reactivo_pct DESC",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.402",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:04:31.709",
+      "progress": 94,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -248,20 +437,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "tarifa\tactivo_medio_wh\treactivo_medio_varh\tratio_reactivo_pct\nT2\t10234.47\t1393.88\t13.62\nT1\t5411.69\t270.88\t5.01\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d14"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d15"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820402_1299227080",
       "id": "paragraph_08",
       "dateCreated": "2026-05-03 16:13:40.402",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:04:31.718",
+      "dateFinished": "2026-05-05 13:04:45.912",
+      "status": "FINISHED"
     },
     {
       "title": "9. Deteccion de contadores inactivos",
-      "text": "%spark.sql\nSELECT cups, tarifa, provincia, municipio,\n       COUNT(*) AS registros_sin_consumo\nFROM consumo\nWHERE consumo_activo_total_wh = 0\nGROUP BY cups, tarifa, provincia, municipio\nORDER BY registros_sin_consumo DESC\nLIMIT 10",
+      "text": "%spark.sql\nSELECT cups, tarifa, provincia, municipio,\n       COUNT(*) AS registros_sin_consumo\nFROM consumo\nWHERE consumo_activo_total_wh \u003d 0\nGROUP BY cups, tarifa, provincia, municipio\nORDER BY registros_sin_consumo DESC\nLIMIT 10",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.402",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:04:45.930",
+      "progress": 100,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -280,20 +496,47 @@
         "params": {},
         "forms": {}
       },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "TABLE",
+            "data": "cups\ttarifa\tprovincia\tmunicipio\tregistros_sin_consumo\n2699\tT2\tP1\tM1\t6\n41200\tT1\tP1\tM1\t5\n65757\tT1\tP30\tM2\t5\n15916\tT2\tP20\tM2\t5\n64760\tT1\tP1\tM1\t5\n9030\tT2\tP1\tM1\t4\n51313\tT1\tP1\tM1\t4\n31791\tT1\tP1\tM1\t4\n94476\tT1\tP38\tM2\t4\n25901\tT1\tP1\tM1\t4\n"
+          }
+        ]
+      },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d16"
+            },
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d17"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820402_192697979",
       "id": "paragraph_09",
       "dateCreated": "2026-05-03 16:13:40.402",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:04:45.938",
+      "dateFinished": "2026-05-05 13:05:00.562",
+      "status": "FINISHED"
     },
     {
       "title": "10. Pico y valle de consumo por hora",
-      "text": "%spark.sql\nSELECT hora,\n       ROUND(MAX(consumo), 1) AS pico_wh,\n       ROUND(MIN(consumo), 1) AS valle_wh,\n       ROUND(AVG(consumo), 1) AS media_wh\nFROM (\n  SELECT 'h01' AS hora, h1  AS consumo FROM consumo UNION ALL\n  SELECT 'h02', h2  FROM consumo UNION ALL\n  SELECT 'h03', h3  FROM consumo UNION ALL\n  SELECT 'h04', h4  FROM consumo UNION ALL\n  SELECT 'h05', h5  FROM consumo UNION ALL\n  SELECT 'h06', h6  FROM consumo UNION ALL\n  SELECT 'h07', h7  FROM consumo UNION ALL\n  SELECT 'h08', h8  FROM consumo UNION ALL\n  SELECT 'h09', h9  FROM consumo UNION ALL\n  SELECT 'h10', h10 FROM consumo UNION ALL\n  SELECT 'h11', h11 FROM consumo UNION ALL\n  SELECT 'h12', h12 FROM consumo UNION ALL\n  SELECT 'h13', h13 FROM consumo UNION ALL\n  SELECT 'h14', h14 FROM consumo UNION ALL\n  SELECT 'h15', h15 FROM consumo UNION ALL\n  SELECT 'h16', h16 FROM consumo UNION ALL\n  SELECT 'h17', h17 FROM consumo UNION ALL\n  SELECT 'h18', h18 FROM consumo UNION ALL\n  SELECT 'h19', h19 FROM consumo UNION ALL\n  SELECT 'h20', h20 FROM consumo UNION ALL\n  SELECT 'h21', h21 FROM consumo UNION ALL\n  SELECT 'h22', h22 FROM consumo UNION ALL\n  SELECT 'h23', h23 FROM consumo UNION ALL\n  SELECT 'h24', h24 FROM consumo\n)\nGROUP BY hora\nORDER BY hora",
+      "text": "%spark.sql\nSELECT hora,\n       ROUND(MAX(consumo), 1) AS pico_wh,\n       ROUND(MIN(consumo), 1) AS valle_wh,\n       ROUND(AVG(consumo), 1) AS media_wh\nFROM (\n  SELECT \u0027h01\u0027 AS hora, h1  AS consumo FROM consumo UNION ALL\n  SELECT \u0027h02\u0027, h2  FROM consumo UNION ALL\n  SELECT \u0027h03\u0027, h3  FROM consumo UNION ALL\n  SELECT \u0027h04\u0027, h4  FROM consumo UNION ALL\n  SELECT \u0027h05\u0027, h5  FROM consumo UNION ALL\n  SELECT \u0027h06\u0027, h6  FROM consumo UNION ALL\n  SELECT \u0027h07\u0027, h7  FROM consumo UNION ALL\n  SELECT \u0027h08\u0027, h8  FROM consumo UNION ALL\n  SELECT \u0027h09\u0027, h9  FROM consumo UNION ALL\n  SELECT \u0027h10\u0027, h10 FROM consumo UNION ALL\n  SELECT \u0027h11\u0027, h11 FROM consumo UNION ALL\n  SELECT \u0027h12\u0027, h12 FROM consumo UNION ALL\n  SELECT \u0027h13\u0027, h13 FROM consumo UNION ALL\n  SELECT \u0027h14\u0027, h14 FROM consumo UNION ALL\n  SELECT \u0027h15\u0027, h15 FROM consumo UNION ALL\n  SELECT \u0027h16\u0027, h16 FROM consumo UNION ALL\n  SELECT \u0027h17\u0027, h17 FROM consumo UNION ALL\n  SELECT \u0027h18\u0027, h18 FROM consumo UNION ALL\n  SELECT \u0027h19\u0027, h19 FROM consumo UNION ALL\n  SELECT \u0027h20\u0027, h20 FROM consumo UNION ALL\n  SELECT \u0027h21\u0027, h21 FROM consumo UNION ALL\n  SELECT \u0027h22\u0027, h22 FROM consumo UNION ALL\n  SELECT \u0027h23\u0027, h23 FROM consumo UNION ALL\n  SELECT \u0027h24\u0027, h24 FROM consumo\n)\nGROUP BY hora\nORDER BY hora",
       "user": "anonymous",
-      "dateUpdated": "2026-05-03 16:13:40.402",
-      "progress": 0,
+      "dateUpdated": "2026-05-05 13:05:00.651",
+      "progress": 44,
       "config": {
         "editorSetting": {
           "language": "sql",
@@ -313,16 +556,30 @@
         "forms": {}
       },
       "apps": [],
-      "runtimeInfos": {},
+      "runtimeInfos": {
+        "jobUrl": {
+          "propertyName": "jobUrl",
+          "label": "SPARK JOB",
+          "tooltip": "View in Spark web UI",
+          "group": "spark",
+          "values": [
+            {
+              "jobUrl": "http://f8edbfa1b89a:4040/jobs/job?id\u003d18"
+            }
+          ],
+          "interpreterSettingId": "spark"
+        }
+      },
       "progressUpdateIntervalMs": 500,
       "jobName": "paragraph_1777824820402_1509139194",
       "id": "paragraph_10",
       "dateCreated": "2026-05-03 16:13:40.402",
-      "status": "READY"
+      "dateStarted": "2026-05-05 13:05:00.660",
+      "status": "ABORT"
     },
     {
       "title": "11. Distribucion por tramos de consumo",
-      "text": "%spark.sql\nSELECT\n  CASE\n    WHEN consumo_activo_total_wh = 0       THEN '0. Sin consumo'\n    WHEN consumo_activo_total_wh < 500     THEN '1. Bajo  (<500 Wh)'\n    WHEN consumo_activo_total_wh < 2000    THEN '2. Medio (500-2000 Wh)'\n    WHEN consumo_activo_total_wh < 5000    THEN '3. Alto  (2000-5000 Wh)'\n    ELSE                                        '4. Muy alto (>5000 Wh)'\n  END AS tramo,\n  COUNT(*) AS num_registros,\n  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) AS porcentaje\nFROM consumo\nGROUP BY 1\nORDER BY 1",
+      "text": "%spark.sql\nSELECT\n  CASE\n    WHEN consumo_activo_total_wh \u003d 0       THEN \u00270. Sin consumo\u0027\n    WHEN consumo_activo_total_wh \u003c 500     THEN \u00271. Bajo  (\u003c500 Wh)\u0027\n    WHEN consumo_activo_total_wh \u003c 2000    THEN \u00272. Medio (500-2000 Wh)\u0027\n    WHEN consumo_activo_total_wh \u003c 5000    THEN \u00273. Alto  (2000-5000 Wh)\u0027\n    ELSE                                        \u00274. Muy alto (\u003e5000 Wh)\u0027\n  END AS tramo,\n  COUNT(*) AS num_registros,\n  ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER(), 1) AS porcentaje\nFROM consumo\nGROUP BY 1\nORDER BY 1",
       "user": "anonymous",
       "dateUpdated": "2026-05-03 16:13:40.402",
       "progress": 0,
@@ -363,5 +620,7 @@
   "config": {
     "isZeppelinNotebookCronEnable": false
   },
-  "info": {}
+  "info": {
+    "isRunning": true
+  }
 }
